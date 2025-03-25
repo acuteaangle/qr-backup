@@ -11,12 +11,30 @@ jobs:
     strategy:
       matrix:
         os:
-#          - macos-latest
           - ubuntu-latest
+          #- macos-latest
+        python-version:
+          - '3.9' # mininum supported
+          - '3.13'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Install dependencies
-        run: sudo apt install -y ghostscript gnupg2 imagemagick zbar-tools && sudo pip install -r requirements.txt
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip' # Cache pip dependencies
+      - name: Install Python dependencies
+        run: python3 -m pip install --break-system-packages -r requirements.txt
+      - if: matrix.os == 'ubuntu-latest'
+        name: Install Linux dependencies
+        uses: tecolicom/actions-use-apt-tools@v1.6
+        with:
+          tools: ghostscript gnupg2 imagemagick zbar-tools
+      - if: matrix.os == 'macos-latest'
+        name: Install MacOS dependencies
+        uses: tecolicom/actions-use-homebrew-tools@v1.3
+        with:
+          tools: ghostscript gnupg imagemagick zbar
       - name: Run tests
         run: make test
